@@ -1,0 +1,132 @@
+<html>
+  <head>
+    <title>Vanilla Boilerplate</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="https://npmcdn.com/moralis@0.0.6/dist/moralis.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  </head>
+
+  <body>
+    <button id="btn-login">Moralis Login</button>
+    <button id="btn-logout">Logout</button>
+    <br />
+
+    <br />
+
+    <script>
+      // connect to Moralis server
+      Moralis.initialize("9UqW6RfM4mz7xwhVsq8t4IogzJMIKUTSVMlcngUo");
+      Moralis.serverURL = "https://1l2ewscibgag.moralishost.com:2053/server";
+
+      var config = {
+        type: Phaser.AUTO,
+        width: 1000,
+        height: 600,
+
+        scene: {
+          preload: preload,
+          create: create,
+          update: update,
+        },
+        physics: {
+          default: "arcade",
+          arcade: {
+            gravity: { y: 300 },
+            debug: false,
+          },
+        },
+      };
+
+      var game;
+      var platforms;
+      var cursors;
+
+      var jump_hight = -300;
+
+      function launch() {
+        let user = Moralis.User.current();
+
+        if (!user) {
+          console.log("Please Login with Metamask!");
+        } else {
+          let addr = user.get("ethAddress");
+          console.log(addr);
+          game = new Phaser.Game(config);
+        }
+      }
+
+      launch();
+
+      //  Game Preload Actions
+      function preload() {
+        this.load.image("background", "assets/png/BG.png");
+        this.load.image("ground", "assets/png/Tiles/Tile2.png");
+        this.load.image("player", "assets/pp.png");
+      }
+
+      //  Create Game Assets
+      function create() {
+        this.add.image(500, 300, "background").setScale(0.55);
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(410, 400, "ground").setScale(0.8).refreshBody();
+        platforms.create(508, 400, "ground").setScale(0.8).refreshBody();
+        platforms.create(610, 400, "ground").setScale(0.8).refreshBody();
+
+        player = this.physics.add
+          .sprite(500, 100, "player")
+          .setScale(0.1)
+          .refreshBody();
+
+        player.setBounce(0.4);
+        // player.setCollideWorldBounds(true);
+
+        this.physics.add.collider(player, platforms);
+
+        cursors = this.input.keyboard.createCursorKeys();
+      }
+
+      // Game Updates
+      function update() {
+        if (cursors.left.isDown) {
+          player.setVelocityX(-160);
+
+          // player.anims.play("left", true);
+        } else if (cursors.right.isDown) {
+          player.setVelocityX(160);
+
+          // player.anims.play("right", true);
+        } else {
+          player.setVelocityX(0);
+
+          // player.anims.play("turn");
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+          player.setVelocityY(jump_hight);
+        }
+      }
+
+      // add from here down
+      async function login() {
+        let user = Moralis.User.current();
+
+        if (!user) {
+          user = await Moralis.Web3.authenticate();
+        }
+        launch();
+        console.log("logged in user:", user);
+      }
+
+      async function logOut() {
+        await Moralis.User.logOut();
+        console.log("logged out");
+        location.reload();
+      }
+
+      document.getElementById("btn-login").onclick = login;
+      document.getElementById("btn-logout").onclick = logOut;
+    </script>
+  </body>
+</html>
